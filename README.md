@@ -1,6 +1,13 @@
 
 # Systemd-CryptSetup operation combined with initramfs-tools
 
+## My changes in this fork
+I am running Debian Bookworm, and it seems that you don't need to build Systemd with TPM support since it is already there.
+Applying the patches is mandatory.
+
+Full process step 7 explains the most important steps to get this working.
+
+
 ## Installation:
 ### TLDR:
 If you have a LUKS container and want it to unlock, without reading the scripts, run `sudo ./install.sh`.  This will:
@@ -76,7 +83,20 @@ NB: big thanks to the authors of these articles - they helped me get most of the
     - the user has to manually unlock the LUKS partition with cryptsetup, then exit the shell and the system continues to boot.
 6. Install git, get this repo, run `sudo ./install.sh`
 7. Store a key in the TPM for LUKS
-   `systemd-cryptenroll`
+   Check https://wiki.archlinux.org/title/Trusted_Platform_Module for a good description about PCRs.
+
+   ```
+   # Check for correct detection of TPM, install additional packages as needed
+   SYSTEMD_LOG_LEVEL=debug systemd-cryptenroll --tpm2-device=list
+   # For Debian bookworm this packages is needed:
+   sudo apt install -y libtss2-esys-3.0.2-0 libtss2-rc0
+   sudo update-initramfs -u
+   sudo systemd-cryptenroll --wipe-slot tpm2 --tpm2-device auto --tpm2-pcrs "0+1+2+3+4+5+7+8+9" /dev/nvme0n1p3
+   ```
+
+   Don't forget to edit /etc/crypttab to include ,tpm2-device=auto
+
+
 8. Reboot.
 
 
